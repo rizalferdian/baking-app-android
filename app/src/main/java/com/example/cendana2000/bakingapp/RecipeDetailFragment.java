@@ -55,6 +55,11 @@ public class RecipeDetailFragment extends Fragment {
     private SimpleExoPlayer player;
     @BindView(R.id.recipe_detail) TextView mRecipeDetail;
     private String EXOPLAYER_KEY = "player_position";
+    private Bundle mSavedInstanceState;
+    private View mRootView;
+    private Context mContext;
+    private String mVideoUrlString = null;
+    private long mCurrentPosition = 0;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -92,7 +97,8 @@ public class RecipeDetailFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_recipe_detail, container, false);
-        Context context = container.getContext();
+        mContext = container.getContext();
+        mRootView = rootView;
         ButterKnife.bind(this, rootView);
 
         // Show the dummy content as text in a TextView.
@@ -105,66 +111,79 @@ public class RecipeDetailFragment extends Fragment {
         } else {
             int index  = mPosition - 1;
             RecipeStepResponse recipeStep = mRecipeResponse.getSteps().get(index);
-            String videoUrlString = recipeStep.getVideoURL();
-            String stepDescription = recipeStep.getDescription();
+            mVideoUrlString = recipeStep.getVideoURL();
 
-            if(videoUrlString != null && !videoUrlString.isEmpty()) {
-                Long currentPosition = null;
-                if(savedInstanceState != null) {
-                    currentPosition = savedInstanceState.getLong(EXOPLAYER_KEY);
-                }
-                preparedExoplayer(context, rootView, recipeStep.getVideoURL(), currentPosition);
-            }
+            mRecipeDetail.setText(recipeStep.getDescription());
+        }
 
-            mRecipeDetail.setText(stepDescription);
+        if(savedInstanceState != null) {
+            mSavedInstanceState = savedInstanceState;
         }
 
         return rootView;
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        if(player != null) {
-            player.setPlayWhenReady(true);
+    public void onStart() {
+        super.onStart();
+        if (Util.SDK_INT > 23) {
+            initializePlayer();
         }
     }
 
-    private void preparedExoplayer(Context context, View rootView, String videoStepString, Long currentPosition) {
-        // 1. Create a default TrackSelector
-        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-        TrackSelection.Factory videoTrackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(bandwidthMeter);
-        TrackSelector trackSelector =
-                new DefaultTrackSelector(videoTrackSelectionFactory);
+    @Override
+    public void onResume() {
+        super.onResume();
+        if ((Util.SDK_INT <= 23)) {
+            initializePlayer();
+        }
+    }
 
-        // 2. Create the player
-        player = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
+    private void initializePlayer() {
+        if(mVideoUrlString != null && !mVideoUrlString.isEmpty()) {
+            Long currentPosition = null;
+            if(mSavedInstanceState != null) {
+                currentPosition = mSavedInstanceState.getLong(EXOPLAYER_KEY);
+            }
 
-        SimpleExoPlayerView simpleExoPlayerView = (SimpleExoPlayerView) rootView.findViewById(R.id.simple_exo_player_recipe_detail);
-        simpleExoPlayerView.setPlayer(player);
-        simpleExoPlayerView.setVisibility(View.VISIBLE);
+            // 1. Create a default TrackSelector
+            BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+            TrackSelection.Factory videoTrackSelectionFactory =
+                    new AdaptiveTrackSelection.Factory(bandwidthMeter);
+            TrackSelector trackSelector =
+                    new DefaultTrackSelector(videoTrackSelectionFactory);
 
-        // Measures bandwidth during playback. Can be null if not required.
-        DefaultBandwidthMeter bandwidthMetero = new DefaultBandwidthMeter();
-        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
-                Util.getUserAgent(context, getString(R.string.app_name)), bandwidthMetero);
-        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+            // 2. Create the player
+            player = ExoPlayerFactory.newSimpleInstance(mContext, trackSelector);
 
-        Uri mp4VideoUri = Uri.parse(videoStepString);
-        MediaSource videoSource = new ExtractorMediaSource(mp4VideoUri,
-                dataSourceFactory, extractorsFactory, null, null);
+            SimpleExoPlayerView simpleExoPlayerView = (SimpleExoPlayerView) mRootView.findViewById(R.id.player_recipe_detail);
+            simpleExoPlayerView.setPlayer(player);
+            simpleExoPlayerView.setVisibility(View.VISIBLE);
 
-        player.prepare(videoSource);
-        if(currentPosition != null) {
-            player.seekTo(currentPosition);
+            // Measures bandwidth during playback. Can be null if not required.
+            DefaultBandwidthMeter bandwidthMetero = new DefaultBandwidthMeter();
+            DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(mContext,
+                    Util.getUserAgent(mContext, getString(R.string.app_name)), bandwidthMetero);
+            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+
+            Uri mp4VideoUri = Uri.parse(mVideoUrlString);
+            MediaSource videoSource = new ExtractorMediaSource(mp4VideoUri,
+                    dataSourceFactory, extractorsFactory, null, null);
+
+            player.prepare(videoSource);
+            if(currentPosition != null) {
+                player.seekTo(currentPosition);
+            }
+
+            player.setPlayWhenReady(true);
         }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if(player != null) {
-            outState.putLong(EXOPLAYER_KEY, player.getCurrentPosition());
+        if(mCurrentPosition != 0) {
+            outState.putLong(EXOPLAYER_KEY, mCurrentPosition);
+            mCurrentPosition = 0;
         }
         super.onSaveInstanceState(outState);
     }
@@ -172,15 +191,22 @@ public class RecipeDetailFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        if(player != null) {
-            player.setPlayWhenReady(false);
+        if (Util.SDK_INT <= 23) {
+            releasePlayer();
         }
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onStop() {
+        super.onStop();
+        if (Util.SDK_INT > 23) {
+            releasePlayer();
+        }
+    }
+
+    private void releasePlayer() {
         if(player != null) {
+            mCurrentPosition = player.getCurrentPosition();
             player.release();
             player = null;
         }

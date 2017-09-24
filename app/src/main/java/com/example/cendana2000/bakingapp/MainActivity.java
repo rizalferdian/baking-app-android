@@ -3,6 +3,7 @@ package com.example.cendana2000.bakingapp;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.test.espresso.idling.CountingIdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements RecipeAdapter.Lis
     @BindView(R.id.text_error) TextView mTextError;
 
     RecipeAdapter mRecipeAdapter;
+    private CountingIdlingResource mIdlingResource = new CountingIdlingResource("Network_Call");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements RecipeAdapter.Lis
     }
 
     private void fetchRecipeData() {
+        mIdlingResource.increment();
         OkHttpClient client = new OkHttpClient.Builder()
                 .followRedirects(true)
                 .followSslRedirects(true)
@@ -67,11 +70,13 @@ public class MainActivity extends AppCompatActivity implements RecipeAdapter.Lis
             public void onResponse(Call<List<RecipeResponse>> call, Response<List<RecipeResponse>> response) {
                 List<RecipeResponse> recipeResponsesList = response.body();
                 setDataToAdapter(recipeResponsesList);
+                mIdlingResource.decrement();
             }
 
             @Override
             public void onFailure(Call<List<RecipeResponse>> call, Throwable t) {
                 mTextError.setVisibility(View.VISIBLE);
+                mIdlingResource.decrement();
             }
         });
     }
@@ -96,5 +101,9 @@ public class MainActivity extends AppCompatActivity implements RecipeAdapter.Lis
         Intent intent = new Intent(this, RecipeListActivity.class);
         intent.putExtra(RecipeListActivity.RECIPE_RESPONSES_TAG, recipeResponse);
         startActivity(intent);
+    }
+
+    public CountingIdlingResource getIdlingResource() {
+        return mIdlingResource;
     }
 }

@@ -49,17 +49,18 @@ public class RecipeListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recipe_list);
         ButterKnife.bind(this);
 
-        // Show the Up button in the action bar.
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        }
-
         Intent intent = getIntent();
         if(intent.hasExtra(RECIPE_RESPONSES_TAG)){
             RecipeResponse recipeResponse = intent.getParcelableExtra(RECIPE_RESPONSES_TAG);
 
             setupToolbar(recipeResponse.getName() + "'s Recipes");
+
+            // Show the Up button in the action bar.
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            }
+
             setupRecyclerView(recyclerView, recipeResponse);
 
             if (findViewById(R.id.recipe_detail_container) != null) {
