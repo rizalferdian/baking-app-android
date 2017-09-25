@@ -97,7 +97,7 @@ public class RecipeDetailFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_recipe_detail, container, false);
-        mContext = container.getContext();
+        mContext = getActivity().getBaseContext();
         mRootView = rootView;
         ButterKnife.bind(this, rootView);
 

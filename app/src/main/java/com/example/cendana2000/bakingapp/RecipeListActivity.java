@@ -40,6 +40,7 @@ public class RecipeListActivity extends AppCompatActivity {
     private boolean mTwoPane;
     public static final String RECIPE_RESPONSES_TAG = "recipe_response";
     public static final String POSITION_TAG = "position";
+    private int currentStepPosition = 0;
 
     @BindView(R.id.recipe_list) RecyclerView recyclerView;
 
@@ -63,12 +64,17 @@ public class RecipeListActivity extends AppCompatActivity {
 
             setupRecyclerView(recyclerView, recipeResponse);
 
+            if(savedInstanceState != null) {
+                currentStepPosition = savedInstanceState.getInt(POSITION_TAG);
+            }
+
             if (findViewById(R.id.recipe_detail_container) != null) {
                 // The detail container view will be present only in the
                 // large-screen layouts (res/values-w900dp).
                 // If this view is present, then the
                 // activity should be in two-pane mode.
                 mTwoPane = true;
+                attactDetailFragment(currentStepPosition, recipeResponse);
             }
         }
     }
@@ -98,6 +104,32 @@ public class RecipeListActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle(title);
         setSupportActionBar(toolbar);
+    }
+
+    private void attactDetailFragment(int position, RecipeResponse recipeResponse) {
+        Bundle arguments = new Bundle();
+        arguments.putInt(RecipeListActivity.POSITION_TAG, position);
+        arguments.putParcelable(RecipeListActivity.RECIPE_RESPONSES_TAG, recipeResponse);
+
+        RecipeDetailFragment fragment = new RecipeDetailFragment();
+        fragment.setArguments(arguments);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.recipe_detail_container, fragment)
+                .commit();
+    }
+
+    private void startDetailActivity(Context context, int position, RecipeResponse recipeResponse) {
+        Intent intent = new Intent(context, RecipeDetailActivity.class);
+        intent.putExtra(POSITION_TAG, position);
+        intent.putExtra(RECIPE_RESPONSES_TAG, recipeResponse);
+
+        context.startActivity(intent);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(POSITION_TAG, currentStepPosition);
+        super.onSaveInstanceState(outState);
     }
 
     public class RecipeListAdapter
@@ -149,24 +181,12 @@ public class RecipeListActivity extends AppCompatActivity {
             holder.mView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    currentStepPosition = position;
                     if (mTwoPane) {
-
-                        Bundle arguments = new Bundle();
-                        arguments.putInt(RecipeListActivity.POSITION_TAG, position);
-                        arguments.putParcelable(RecipeListActivity.RECIPE_RESPONSES_TAG, holder.mItem);
-
-                        RecipeDetailFragment fragment = new RecipeDetailFragment();
-                        fragment.setArguments(arguments);
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.recipe_detail_container, fragment)
-                                .commit();
+                        attactDetailFragment(position, holder.mItem);
                     } else {
                         Context context = v.getContext();
-                        Intent intent = new Intent(context, RecipeDetailActivity.class);
-                        intent.putExtra(POSITION_TAG, position);
-                        intent.putExtra(RECIPE_RESPONSES_TAG, holder.mItem);
-
-                        context.startActivity(intent);
+                        startDetailActivity(context, position, holder.mItem);
                     }
                 }
             });
