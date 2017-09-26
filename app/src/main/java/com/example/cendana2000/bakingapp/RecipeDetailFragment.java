@@ -59,7 +59,7 @@ public class RecipeDetailFragment extends Fragment {
     private View mRootView;
     private Context mContext;
     private String mVideoUrlString = null;
-    private long mCurrentPosition = 0;
+    private Long mPlayerCurrentPosition = null;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -141,11 +141,6 @@ public class RecipeDetailFragment extends Fragment {
 
     private void initializePlayer() {
         if(mVideoUrlString != null && !mVideoUrlString.isEmpty()) {
-            Long currentPosition = null;
-            if(mSavedInstanceState != null) {
-                currentPosition = mSavedInstanceState.getLong(EXOPLAYER_KEY);
-            }
-
             // 1. Create a default TrackSelector
             BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
             TrackSelection.Factory videoTrackSelectionFactory =
@@ -171,19 +166,21 @@ public class RecipeDetailFragment extends Fragment {
                     dataSourceFactory, extractorsFactory, null, null);
 
             player.prepare(videoSource);
-            if(currentPosition != null) {
-                player.seekTo(currentPosition);
+            if(mSavedInstanceState != null) {
+                player.seekTo(mSavedInstanceState.getLong(EXOPLAYER_KEY));
+                mSavedInstanceState = null;
+            } else if(mPlayerCurrentPosition != null) {
+                player.seekTo(mPlayerCurrentPosition);
+                mPlayerCurrentPosition = null;
             }
-
             player.setPlayWhenReady(true);
         }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if(mCurrentPosition != 0) {
-            outState.putLong(EXOPLAYER_KEY, mCurrentPosition);
-            mCurrentPosition = 0;
+        if(mPlayerCurrentPosition != null) {
+            outState.putLong(EXOPLAYER_KEY, mPlayerCurrentPosition);
         }
         super.onSaveInstanceState(outState);
     }
@@ -191,8 +188,15 @@ public class RecipeDetailFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
+        setPlayerCurrentPosition();
         if (Util.SDK_INT <= 23) {
             releasePlayer();
+        }
+    }
+
+    private void setPlayerCurrentPosition() {
+        if(player != null) {
+            mPlayerCurrentPosition = player.getCurrentPosition();
         }
     }
 
@@ -206,7 +210,6 @@ public class RecipeDetailFragment extends Fragment {
 
     private void releasePlayer() {
         if(player != null) {
-            mCurrentPosition = player.getCurrentPosition();
             player.release();
             player = null;
         }
