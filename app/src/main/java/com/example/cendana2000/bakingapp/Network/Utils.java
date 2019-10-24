@@ -5,7 +5,7 @@ package com.example.cendana2000.bakingapp.Network;
  */
 
 public class Utils {
-    static final String BASE_URL = "http://go.udacity.com/";
+    static final String BASE_URL = "https://go.udacity.com/";
 
     public static String getBaseUrl(){
         return BASE_URL;

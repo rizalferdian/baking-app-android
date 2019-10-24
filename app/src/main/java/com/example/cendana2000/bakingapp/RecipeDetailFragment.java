@@ -4,13 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
 
 import com.example.cendana2000.bakingapp.Network.RecipeIngredientResponse;
 import com.example.cendana2000.bakingapp.Network.RecipeResponse;
@@ -53,7 +54,8 @@ public class RecipeDetailFragment extends Fragment {
     private int mPosition;
     private RecipeResponse mRecipeResponse;
     private SimpleExoPlayer player;
-    @BindView(R.id.recipe_detail) TextView mRecipeDetail;
+    @BindView(R.id.recipe_detail)
+    TextView mRecipeDetail;
     private String EXOPLAYER_KEY = "player_position";
     private Bundle mSavedInstanceState;
     private View mRootView;
@@ -82,13 +84,13 @@ public class RecipeDetailFragment extends Fragment {
             Activity activity = this.getActivity();
             Toolbar toolbar = (Toolbar) activity.findViewById(R.id.detail_toolbar);
             if (toolbar != null) {
-                if(mPosition == 0) {
-                    toolbar.setTitle(mRecipeResponse.getName()+ "'s Ingredient");
+                if (mPosition == 0) {
+                    toolbar.setTitle(mRecipeResponse.getName() + "'s Ingredient");
                 } else {
                     int index = mPosition - 1;
                     toolbar.setTitle(mRecipeResponse.getSteps().get(index).getShortDescription());
                 }
-                ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+                ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
             }
         }
     }
@@ -104,19 +106,19 @@ public class RecipeDetailFragment extends Fragment {
         // Show the dummy content as text in a TextView.
         if (mPosition == 0) {
             String ingredient = "";
-            for (RecipeIngredientResponse recipeIngredient: mRecipeResponse.getIngredients()) {
-                ingredient = ingredient.concat(recipeIngredient.getQuantity() + " "+ recipeIngredient.getMeasure() + " of " + recipeIngredient.getIngredient() + "\n\n");
+            for (RecipeIngredientResponse recipeIngredient : mRecipeResponse.getIngredients()) {
+                ingredient = ingredient.concat(recipeIngredient.getQuantity() + " " + recipeIngredient.getMeasure() + " of " + recipeIngredient.getIngredient() + "\n\n");
             }
             mRecipeDetail.setText(ingredient);
         } else {
-            int index  = mPosition - 1;
+            int index = mPosition - 1;
             RecipeStepResponse recipeStep = mRecipeResponse.getSteps().get(index);
             mVideoUrlString = recipeStep.getVideoURL();
 
             mRecipeDetail.setText(recipeStep.getDescription());
         }
 
-        if(savedInstanceState != null) {
+        if (savedInstanceState != null) {
             mSavedInstanceState = savedInstanceState;
         }
 
@@ -140,7 +142,7 @@ public class RecipeDetailFragment extends Fragment {
     }
 
     private void initializePlayer() {
-        if(mVideoUrlString != null && !mVideoUrlString.isEmpty()) {
+        if (mVideoUrlString != null && !mVideoUrlString.isEmpty()) {
             // 1. Create a default TrackSelector
             BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
             TrackSelection.Factory videoTrackSelectionFactory =
@@ -151,7 +153,7 @@ public class RecipeDetailFragment extends Fragment {
             // 2. Create the player
             player = ExoPlayerFactory.newSimpleInstance(mContext, trackSelector);
 
-            SimpleExoPlayerView simpleExoPlayerView = (SimpleExoPlayerView) mRootView.findViewById(R.id.player_recipe_detail);
+            SimpleExoPlayerView simpleExoPlayerView = mRootView.findViewById(R.id.player_recipe_detail);
             simpleExoPlayerView.setPlayer(player);
             simpleExoPlayerView.setVisibility(View.VISIBLE);
 
@@ -166,10 +168,10 @@ public class RecipeDetailFragment extends Fragment {
                     dataSourceFactory, extractorsFactory, null, null);
 
             player.prepare(videoSource);
-            if(mSavedInstanceState != null) {
+            if (mSavedInstanceState != null) {
                 player.seekTo(mSavedInstanceState.getLong(EXOPLAYER_KEY));
                 mSavedInstanceState = null;
-            } else if(mPlayerCurrentPosition != null) {
+            } else if (mPlayerCurrentPosition != null) {
                 player.seekTo(mPlayerCurrentPosition);
                 mPlayerCurrentPosition = null;
             }
@@ -179,7 +181,7 @@ public class RecipeDetailFragment extends Fragment {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if(mPlayerCurrentPosition != null) {
+        if (mPlayerCurrentPosition != null) {
             outState.putLong(EXOPLAYER_KEY, mPlayerCurrentPosition);
         }
         super.onSaveInstanceState(outState);
@@ -195,7 +197,7 @@ public class RecipeDetailFragment extends Fragment {
     }
 
     private void setPlayerCurrentPosition() {
-        if(player != null) {
+        if (player != null) {
             mPlayerCurrentPosition = player.getCurrentPosition();
         }
     }
@@ -209,7 +211,7 @@ public class RecipeDetailFragment extends Fragment {
     }
 
     private void releasePlayer() {
-        if(player != null) {
+        if (player != null) {
             player.release();
             player = null;
         }
